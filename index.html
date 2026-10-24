@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cost estimator for renting in Abu Dhabi</title>
+<style>
+  :root {
+    /* Beige palette, ICP-services inspired */
+    --bg: #f5efdf;
+    --surface: #fbf7ec;
+    --ink: #3d3323;
+    --muted: #8a7a5c;
+    --accent: #96793a;
+    --border: #e2d7ba;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 system-ui, "Segoe UI", Arial, sans-serif;
+  }
+
+  main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+
+  header {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: .75rem;
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  header p {
+    margin: .35rem 0 0;
+    color: var(--muted);
+    font-size: .95rem;
+  }
+
+  section + section { margin-top: 2.5rem; }
+
+  h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--accent);
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+
+  /* --- Inputs --- */
+  .field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: .45rem 0;
+  }
+  .field > label { flex: 1; }
+  .field small { color: var(--muted); display: block; }
+  .field input:not([type="radio"]), .field select {
+    width: 10.5rem;
+    padding: .4rem .6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    text-align: right;
+  }
+  .field input:focus, .field select:focus {
+    outline: 1px solid var(--accent);
+    border-color: var(--accent);
+  }
+  /* Radio-pair rows: the Yes/No pair (Yes left, No right) sits at the
+     right edge. The movers amount lives in its own row below the radios,
+     right-aligned like the other number fields, and is toggled as a whole. */
+  .field.movers-amount { justify-content: flex-end; }
+  .field .radio-group {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .field .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .field input[type="radio"] {
+    width: auto;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .hidden-input { display: none !important; }
+  /* --- Results --- */
+  /* Shared panel look: same chrome as the input controls */
+  .panel, #results {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .panel { padding: .4rem 1.25rem; }
+  #results {
+    padding: 1rem 1.25rem;
+  }
+  #results p {
+    margin: 0;
+    padding: .5rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  #results p:last-child { border-bottom: none; }
+  #results .label { color: var(--muted); }
+  #results .value { text-align: right; font-variant-numeric: tabular-nums; }
+  #results .total {
+    font-weight: 600;
+    color: var(--accent);
+    border-bottom-width: 2px;
+  }
+  #error {
+    color: #8c2f1e;
+    font-size: .95rem;
+  }
+
+  /* --- FAQ --- */
+  details {
+    border-bottom: 1px solid var(--border);
+  }
+  details summary {
+    cursor: pointer;
+    padding: .7rem 0;
+  }
+  details[open] summary {
+    color: var(--accent);
+  }
+  details p {
+    margin: 0;
+    padding: 0 0 .9rem;
+    color: var(--ink);
+  }
+
+  footer {
+    margin-top: 3rem;
+    color: var(--muted);
+    font-size: .85rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cost estimator for renting in Abu Dhabi</h1>
+    <p>Indicative move-in expenses. All amounts in AED. Blank fields use the shown defaults.</p>
+  </header>
+
+  <section>
+    <h2>Your details</h2>
+
+    <div class="panel">
+    <div class="field">
+      <label for="price">Annual rent<small>the advertised rent price, e.g. 90,000</small></label>
+      <input type="text" inputmode="decimal" id="price" placeholder="90,000">
+    </div>
+
+    <div class="field">
+      <label for="checks">Number of cheques<small>typically 1–4 (not a rule); 1 = pay the year with a single cheque</small></label>
+      <input type="text" inputmode="numeric" id="checks" placeholder="1">
+    </div>
+
+    <div class="field">
+      <label for="misc">Misc. one-off expenses<small>house hunting, taxis, initial cleaning…</small></label>
+      <input type="text" inputmode="decimal" id="misc" placeholder="500">
+    </div>
+
+    <div class="field">
+      <label for="admin">Admin (Tawtheeq)<small>≈ 50 if you register yourself, ≈ 600–1,500 via property management</small></label>
+      <input type="text" inputmode="decimal" id="admin" placeholder="800">
+    </div>
+
+    <div class="field radios">
+      <label>Moving expenses</label>
+      <span class="radio-group">
+        <label>Yes <input type="radio" name="movers" value="yes"></label>
+        <label>No <input type="radio" name="movers" value="no" checked></label>
+      </span>
+    </div>
+
+    <div class="field movers-amount" id="movingWrap">
+      <label for="moving"><small>Rough for a 1-bedroom; varies by unit size and company</small></label>
+      <input type="text" inputmode="decimal" id="moving" placeholder="2000">
+    </div>
+
+    <div class="field radios">
+      <label>Using an agency<small>+5% of the annual rent; pick No when renting directly from the owner</small></label>
+      <span class="radio-group">
+        <label>Yes <input type="radio" name="agent" value="agent" checked></label>
+        <label>No <input type="radio" name="agent" value="noagent"></label>
+      </span>
+    </div>
+
+    <div class="field radios">
+      <label>Furnished unit<small>10% deposit instead of 5%; furnishing typically included in the rent</small></label>
+      <span class="radio-group">
+        <label>Yes <input type="radio" name="furnish" value="yes"></label>
+        <label>No <input type="radio" name="furnish" value="no" checked></label>
+      </span>
+    </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Estimate</h2>
+    <div id="error" hidden></div>
+    <div id="results" hidden></div>
+  </section>
+
+  <section>
+    <h2>FAQ</h2>
+
+    <details>
+      <summary>What is the total estimate?</summary>
+      <p>Everything you pay over the first year, added up as follows:</p>
+      <p><strong>Rent</strong> — the full advertised annual rent. Splitting it into
+      cheques changes when you pay; though paying by cheque typically adds a one-off
+      cheque fee of around AED 500, which is included in the estimate, and some
+      owners may increase the total rent for a higher number of cheques.</p>
+      <p><strong>Projected TAQA / Tasleem bills</strong> — the municipality fee at 5%
+      of the annual rent, plus roughly estimated monthly utilities, each paid across
+      twelve monthly bills (total = one year's worth of both).</p>
+      <p><strong>Adjacent one-off expenses</strong> — the TAQA and Tasleem deposits
+      (AED 2,000 combined), the security deposit (5% of rent, or 10% for a furnished
+      unit), the AED 500 cheque fee when paying by cheque, the moving expenses when
+      included, misc one-off expenses, Tawtheeq/admin costs, and the 5% agency
+      commission when using an agency.</p>
+      <p>Refunds are not netted out: deposits count in full as cash you hand over —
+      the refund expectations are detailed in the items below.</p>
+    </details>
+
+    <details>
+      <summary>What is the security deposit, and can I get it back?</summary>
+      <p>Paid up front and held by the owner or agent — typically 5% of the annual rent
+      for an unfurnished unit, and typically 10% for a furnished one
+      (the calculator switches automatically with the Furnished option). Don't count
+      on the full amount coming back: even for an undamaged unit, the owner usually
+      keeps something for maintenance and repairs — often in the range of
+      <strong>AED 1,000&ndash;2,000</strong> — and that deduction is often
+      unconditional. The exception: only if the owner agrees to it, so negotiate
+      the refund terms and get them in writing before signing.</p>
+    </details>
+
+    <details>
+      <summary>What about furnished units?</summary>
+      <p>When the unit is already furnished, the furnishing is typically included in
+      the advertised rent, so you don't budget for buying furniture — but expect a
+      higher security deposit (typically around 10% instead of 5%) since the landlord
+      also holds you accountable for the furniture's condition. The kept amount may
+      vary, and does so more widely for furnished units.</p>
+    </details>
+
+    <details>
+      <summary>What are the TAQA / Tasleem deposits?</summary>
+      <p>Two mandatory utility guarantees, AED 1,000 each (AED 2,000 combined
+      here): <strong>TAQA</strong> covers your electricity, water — and optionally
+      gas, if you connect it. <strong>Tasleem</strong> is the district-cooling (AC)
+      deposit, which is mandatory when you rent.
+      Both are refundable when you close the accounts and move out.</p>
+    </details>
+
+    <details>
+      <summary>What if I cancel before the contract ends?</summary>
+      <p>TAQA bills are charged irrespective of your rental contract — cancelling it
+      early still requires paying for the entire year. Expect the final bill to be summed against your
+      deposit in one closing settlement: depending on how far into the contract you
+      are, you either get part of the deposit refunded, or you need to pay extra.</p>
+      <p>On the rental side, early termination is governed by your contract: many
+      contracts carry a penalty of up to two months' rent, and typically require
+      an upfront notice of 2&ndash;3 months. This varies contract by contract, so
+      always check the termination clause before signing.</p>
+    </details>
+
+    <details>
+      <summary>What is Tawtheeq?</summary>
+      <p>The official tenancy contract registration in Abu Dhabi. If you rent directly from an owner you can register it
+      yourself for around AED 50. Property management companies typically don't give you the
+      option to register it yourself, so their one-off fee of roughly
+      AED 600&ndash;1,500 should be considered an unavoidable cost. The calculator
+      defaults to an average of about AED 800.</p>
+    </details>
+
+    <details>
+      <summary>What is the municipality fee?</summary>
+      <p>A fee of 5% of the annual rent, charged monthly through your utility
+      bills — so it scales with your rent, not your consumption. The bills pace it
+      as follows: the first month's bill covers only the usage, the second month's
+      bill adds the first two months' fee on top of the usage, and from the third
+      month on every bill is one month's fee plus the usage.</p>
+    </details>
+
+    <details>
+      <summary>How accurate is the utilities estimate?</summary>
+      <p>It is a rough guess, shown as a range: the monthly bill is estimated at
+      3.6%&ndash;4.8% of the monthly rent. Heavy air-conditioning use in summer pushes
+      you toward the upper end. Replace the range with your contract's real recurring
+      bills once known.</p>
+    </details>
+
+    <details>
+      <summary>Is the agency commission included?</summary>
+      <p>Only if you select &ldquo;Using an agency&rdquo;, at 5% of the annual rent.
+      Renting directly from the owner saves this cost; many listings advertised as
+      &ldquo;no commission&rdquo; still have it baked into the rent.</p>
+    </details>
+  </section>
+
+  <footer>
+    Estimates only — actual amounts vary by landlord, building and municipality rules.
+  </footer>
+</main>
+
+<script>
+  // Same cost model (and defaults) as rent.py
+  const DEFAULTS = {
+    price: 90000,  // example used when the rent field is left blank
+    checks: 1,
+    misc: 500,     // house hunting, taxis, initial cleaning, etc.
+    moving: 2000,  // local movers
+    admin: 800,    // Tawtheeq: ~50 self-registered, 600-1500 via
+                   //   property management firms
+  };
+  const MUNICIPALITY_RATE = 0.05;
+  const COMMISSION_RATE = 0.05;
+  // Security deposit: 5% unfurnished, ~10% furnished. Typically not fully
+  // refundable even for an undamaged unit — see the FAQ for details.
+  const SECURITY_DEPOSIT_RATE = 0.05;
+  const SECURITY_DEPOSIT_FURNISHED = 0.10;
+  const UTILITIES_RATE_LOW = 0.003;   // rough guess: monthly bill as a
+  const UTILITIES_RATE_HIGH = 0.004;  //   fraction of the ANNUAL rent
+  const DEPOSITS = 2000;   // ~1000 TAQA (electricity, water, opt. gas)
+                           //   + ~1000 Tasleem (district cooling — mandatory
+                           //   when renting)
+  const CHECK_FEE = 500;   // one-off fee when paying by cheques
+
+  const fmt = n => n.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtSpan = (low, high) => low === high ? fmt(low) : `${fmt(low)} - ${fmt(high)}`;
+  // Blank/garbled optional inputs fall back to their defaults.
+  const numDefault = (val, def) => {
+    const n = parseFloat(val);
+    return isNaN(n) ? def : n;
+  };
+
+  function calculate() {
+    const error = document.getElementById("error");
+    const out = document.getElementById("results");
+    // Blank/garbled inputs fall back to the shown defaults; only an
+    // explicitly invalid rent (0, negative) raises an error.
+    const price = numDefault(document.getElementById("price").value, DEFAULTS.price);
+    const checks = Math.max(1, parseInt(document.getElementById("checks").value, 10) || DEFAULTS.checks);
+    const misc = numDefault(document.getElementById("misc").value, DEFAULTS.misc);
+    const admin = numDefault(document.getElementById("admin").value, DEFAULTS.admin);
+    const agent = document.querySelector('input[name="agent"]:checked').value === "agent";
+    const furnished = document.querySelector('input[name="furnish"]:checked').value === "yes";
+    const moversInclude = document.querySelector('input[name="movers"]:checked').value === "yes";
+    // The movers amount row lives below the radios and is toggled as a whole.
+    const movingInput = document.getElementById("moving");
+    document.getElementById("movingWrap")
+      .classList.toggle("hidden-input", !moversInclude);
+    const moving = moversInclude
+      ? numDefault(movingInput.value, DEFAULTS.moving)
+      : 0;
+
+    if (!(price > 0)) {
+      error.textContent = "Annual rent must be a number above zero.";
+      error.hidden = false;
+      out.hidden = true;
+      return;
+    }
+    if (misc < 0 || moving < 0 || admin < 0) {
+      error.textContent = "Cost inputs cannot be negative.";
+      error.hidden = false;
+      out.hidden = true;
+      return;
+    }
+
+    const municipalityYear = MUNICIPALITY_RATE * price;
+    const municipalityMonth = municipalityYear / 12;
+    const utilLow = UTILITIES_RATE_LOW * price;   // per month
+    const utilHigh = UTILITIES_RATE_HIGH * price;
+    const commission = agent ? COMMISSION_RATE * price : 0;
+    // Furnished units typically carry a 10% deposit instead of 5%.
+    const security = (furnished ? SECURITY_DEPOSIT_FURNISHED : SECURITY_DEPOSIT_RATE) * price;
+    const checkFee = CHECK_FEE; // cheques always used (checks >= 1)
+
+    // Cash paid on day one, on top of any rent installment.
+    // Municipality fees start with the second month's bill, not day one.
+    const upfront = DEPOSITS + security + commission + checkFee + misc + moving + admin;
+
+    // Everything except the estimated utility bills.
+    const fixedTotal = price + municipalityYear + DEPOSITS + security
+      + commission + checkFee + misc + moving + admin;
+    const totalLow = fixedTotal + 12 * utilLow;
+    const totalHigh = fixedTotal + 12 * utilHigh;
+
+    let firstLow, firstHigh, installment;
+    if (checks > 1) {
+      installment = price / checks;
+      firstLow = firstHigh = installment + upfront;
+    } else {
+      // Rent paid up front; future in-year bills (all 12 municipality months,
+      // 11 utility months) are still cash left to pay.
+      firstLow = totalLow - municipalityYear - 11 * utilLow;
+      firstHigh = totalHigh - municipalityYear - 11 * utilHigh;
+      installment = price;
+    }
+
+    const rows = [];
+    const row = (label, value, cls = "") =>
+      rows.push(`<p class="${cls}"><span class="label">${label}</span><span class="value">${value}</span></p>`);
+
+    row("Total estimated cost", fmtSpan(totalLow, totalHigh), "total");
+    row("Checks", checks);
+    row("Administrative expenses", fmt(admin));
+    row("Security deposit (" + (furnished ? "furnished" : "unfurnished") + ")", fmt(security));
+    if (moving > 0) row("Local movers", fmt(moving));
+    if (misc > 0) row("Misc one-off expenses", fmt(misc));
+    if (commission > 0) row("Agency cost", fmt(commission));
+    row("Move-in total", fmtSpan(firstLow, firstHigh));
+    if (checks > 1) row(`Installments (x${checks - 1})`, fmt(installment));
+    row("Municipality per month", fmt(municipalityMonth));
+    row("Utilities per month (rough estimate)", `${fmt(utilLow)} - ${fmt(utilHigh)}`);
+    row("Internet", "not included (depends on plan/provider preference)");
+    row(
+      "Furnishing & appliances",
+      furnished
+        ? "included with the furnished unit (typically part of the rent)"
+        : "not included (personal preference)",
+    );
+
+    error.hidden = true;
+    out.innerHTML = rows.join("");
+    out.hidden = false;
+  }
+
+  document.querySelectorAll("input").forEach(el => {
+    el.addEventListener("input", calculate);
+    el.addEventListener("change", calculate);  // radios fire change, not always input
+  });
+  calculate();
+</script>
+</body>
+</html>
